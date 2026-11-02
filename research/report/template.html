@@ -229,7 +229,8 @@ pre.cmd { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; ov
     <li>模擬裡觀察到一個原型的真實行為：Alice 在同一飛書話題回答 Ticket C 的問題時，訊息也 fan-out 給同話題的 Ticket A；A 合併結束時把這則「未讀」追問釋放回 Eval，多花一次 Router 判斷（最後 ignore）。同一話題掛多張單時會有這種成本。</li>
   </ul>
   <pre class="cmd">pnpm install
-node --import tsx research/sim/run.ts   # 產生 research/sim/out/results.json 與 sim.sqlite</pre>
+npx tsx research/sim/run.ts      # 產生 research/sim/out/results.json 與 sim.sqlite
+node research/report/build.mjs   # 重建本頁</pre>
   <p class="muted">sim.sqlite 內含四張表：<code>im_message</code>（收到的 IM 訊息）、<code>im_post</code>（agent 發出的訊息）、<code>llm_call</code>（每次模型呼叫與其上下文大小）、<code>event_log</code>，以及 superagent 自己的 <code>sa_trigger / sa_thread / sa_ticket / sa_decision / sa_outbox</code>。</p>
 </section>
 </main>
