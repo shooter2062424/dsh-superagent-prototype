@@ -3,3 +3,6 @@ lib/
 .artifacts/
 .env
 coverage/
+research/sim/out/sim.sqlite
+research/report/out/
+.archify/

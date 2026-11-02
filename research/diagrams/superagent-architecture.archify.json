@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "dsh-superagent 架構：Router / Worker 雙層",
+    "output": ".archify/architecture-superagent-20261102-1730/superagent-architecture.html",
+    "quality_profile": "showcase",
+    "locale": "zh-TW",
+    "repository": { "url": "https://github.com/shooter2062424/dsh-superagent-prototype", "provider": "github", "link_mode": "web", "revision": "6337fc823ce20251c8de8085948165c81aaa701e" }
+  },
+  "components": [
+    { "id": "im", "type": "external", "label": "飛書群 / GitHub", "sublabel": "人、bot、CI 事件", "pos": [40, 300], "size": [130, 64] },
+    { "id": "sources", "type": "backend", "label": "Source plugins", "sublabel": "feishuKind · githubKind", "pos": [250, 300], "size": [150, 64], "tag": "scope 過濾",
+      "sources": [{ "path": "src/sources/feishu.ts", "line": 54, "end_line": 59, "label": "Feishu scope" }, { "path": "src/sources/github.ts", "line": 59, "end_line": 62, "label": "GitHub scope" }] },
+    { "id": "engine", "type": "backend", "label": "Engine", "sublabel": "Intake · Evals · Tickets", "pos": [480, 300], "size": [160, 64], "tag": "唯一寫入者",
+      "sources": [{ "path": "src/core/engine.ts", "line": 24, "end_line": 48 }, { "path": "src/core/intake.ts", "line": 38, "end_line": 54, "label": "fan-out" }] },
+    { "id": "gate", "type": "security", "label": "Policy gate", "sublabel": "allowlist · admission · mode", "pos": [480, 170], "size": [160, 64], "tag": "確定性程式碼",
+      "sources": [{ "path": "src/policy.ts", "line": 167, "end_line": 200 }] },
+    { "id": "router", "type": "backend", "label": "Main Session (Router)", "sublabel": "只路由，不碰程式碼", "pos": [480, 40], "size": [160, 64],
+      "sources": [{ "path": "src/app/assessment.ts", "line": 89, "end_line": 104 }, { "path": "prompts/orchestrator.md", "line": 1, "end_line": 16 }, { "path": "src/app/sessions.ts", "line": 77, "end_line": 92, "label": "noWait guard" }] },
+    { "id": "workers", "type": "backend", "label": "Worker Sessions", "sublabel": "每張 Ticket 一個 + 目錄", "pos": [760, 300], "size": [170, 64], "tag": "全工具 · 可平行",
+      "sources": [{ "path": "src/executor/dsh.ts", "line": 171, "end_line": 268 }, { "path": "src/app/tools/executor.ts", "line": 75, "end_line": 80 }] },
+    { "id": "store", "type": "database", "label": "SQLite Store", "sublabel": "Trigger · Thread · Ticket · Effects · Outbox", "pos": [450, 470], "size": [220, 64], "tag": "先存後做",
+      "sources": [{ "path": "src/app/store.ts", "line": 49, "end_line": 70 }, { "path": "src/app/effects.ts", "line": 46, "end_line": 60 }, { "path": "src/app/outbox.ts", "line": 22, "end_line": 48 }] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "dsh-superagent 程序（DeepSeek Harness bundle）", "wraps": ["sources", "engine", "gate", "router", "workers", "store"] }
+  ],
+  "connections": [
+    { "id": "im-sources", "from": "im", "to": "sources", "label": "事件 / 輪詢", "variant": "emphasis" },
+    { "id": "sources-engine", "from": "sources", "to": "engine", "label": "Trigger 去重", "variant": "emphasis" },
+    { "id": "engine-gate", "from": "engine", "to": "gate", "label": "gate()", "variant": "security" },
+    { "id": "gate-router", "from": "gate", "to": "router", "label": "批次候選卡", "variant": "emphasis" },
+    { "id": "router-engine", "from": "router", "to": "engine", "label": "route：accept / attach / stop / ignore", "fromSide": "right", "toSide": "right" },
+    { "id": "engine-workers", "from": "engine", "to": "workers", "label": "Assignment + 訂閱 fan-out", "variant": "emphasis" },
+    { "id": "engine-store", "from": "engine", "to": "store", "label": "atomic 交易" },
+    { "id": "store-im", "from": "store", "to": "im", "label": "Outbox 冪等回覆", "variant": "dashed", "fromSide": "left", "toSide": "bottom" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "兩條路", "items": ["新請求：Trigger → gate → Router 的 Eval → Ticket + Mandate", "既有工作：訂閱的 Thread 直接 fan-out 給 Worker，不經 Eval"] },
+    { "dot": "rose", "title": "權限在程式碼", "items": ["allowlist / admission / accept mode 由 gate 強制", "訊息內容只是資料，改不了 Policy"] },
+    { "dot": "emerald", "title": "可恢復", "items": ["決定先寫 SQLite，再由 Effects 執行", "重啟後中斷的 Assignment 帶 recovery note 重跑"] }
+  ]
+}

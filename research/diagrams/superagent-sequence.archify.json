@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "一次請求的旅程：去重、批次、fan-out、hand-back",
+    "output": ".archify/sequence-handback-20261102-1732/superagent-sequence.html",
+    "quality_profile": "showcase",
+    "locale": "zh-TW",
+    "repository": {
+      "url": "https://github.com/shooter2062424/dsh-superagent-prototype",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "6337fc823ce20251c8de8085948165c81aaa701e"
+    }
+  },
+  "participants": [
+    {
+      "id": "alice",
+      "type": "external",
+      "label": "Alice",
+      "sublabel": "飛書群 oc_team"
+    },
+    {
+      "id": "engine",
+      "type": "backend",
+      "label": "Engine + gate",
+      "sublabel": "Intake / Evals",
+      "sources": [
+        {
+          "path": "src/core/intake.ts",
+          "line": 16,
+          "end_line": 63
+        },
+        {
+          "path": "src/policy.ts",
+          "line": 191,
+          "end_line": 200,
+          "label": "gate"
+        }
+      ]
+    },
+    {
+      "id": "router",
+      "type": "backend",
+      "label": "Router",
+      "sublabel": "Main Session",
+      "sources": [
+        {
+          "path": "prompts/dispatch.md",
+          "line": 1,
+          "end_line": 12
+        }
+      ]
+    },
+    {
+      "id": "wa",
+      "type": "backend",
+      "label": "Worker A",
+      "sublabel": "錯字 Ticket",
+      "sources": [
+        {
+          "path": "prompts/work.md",
+          "line": 8,
+          "end_line": 9,
+          "label": "follow-up 歸屬"
+        }
+      ]
+    },
+    {
+      "id": "wc",
+      "type": "backend",
+      "label": "Worker C",
+      "sublabel": "按鈕顏色 Ticket",
+      "sources": [
+        {
+          "path": "src/executor/dsh.ts",
+          "line": 207,
+          "end_line": 268
+        }
+      ]
+    }
+  ],
+  "segments": [
+    {
+      "from": 150,
+      "to": 318,
+      "label": "00:00 新請求"
+    },
+    {
+      "from": 328,
+      "to": 478,
+      "label": "14:00 範圍外的追問"
+    },
+    {
+      "from": 486,
+      "to": 578,
+      "label": "19:27 一個具體問題"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "alice",
+      "to": "engine",
+      "y": 160,
+      "label": "@agent 修 Sumbit + 補充 /login",
+      "variant": "emphasis",
+      "note": "1 秒內兩則合成同一批；webhook 重送被判 duplicate"
+    },
+    {
+      "id": "m2",
+      "from": "engine",
+      "to": "router",
+      "y": 215,
+      "label": "候選卡 (explicit)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m3",
+      "from": "router",
+      "to": "engine",
+      "y": 245,
+      "label": "accept + Mandate",
+      "variant": "return"
+    },
+    {
+      "id": "m4",
+      "from": "engine",
+      "to": "alice",
+      "y": 275,
+      "label": "ack 一次",
+      "variant": "dashed"
+    },
+    {
+      "id": "m5",
+      "from": "engine",
+      "to": "wa",
+      "y": 305,
+      "label": "Assignment",
+      "variant": "default"
+    },
+    {
+      "id": "m6",
+      "from": "alice",
+      "to": "wa",
+      "y": 345,
+      "label": "「順便改藍色」fan-out",
+      "variant": "default",
+      "note": "訂閱的 Thread 直達 Worker，不經 Eval"
+    },
+    {
+      "id": "m7",
+      "from": "wa",
+      "to": "engine",
+      "y": 400,
+      "label": "handback：超出範圍",
+      "variant": "return"
+    },
+    {
+      "id": "m8",
+      "from": "engine",
+      "to": "router",
+      "y": 430,
+      "label": "新候選卡",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m9",
+      "from": "engine",
+      "to": "wc",
+      "y": 460,
+      "label": "新 Ticket C",
+      "variant": "default"
+    },
+    {
+      "id": "m10",
+      "from": "wc",
+      "to": "router",
+      "y": 495,
+      "label": "report + human_action 問題",
+      "variant": "return"
+    },
+    {
+      "id": "m11",
+      "from": "router",
+      "to": "alice",
+      "y": 525,
+      "label": "原樣轉問一次",
+      "variant": "dashed"
+    },
+    {
+      "id": "m12",
+      "from": "alice",
+      "to": "wc",
+      "y": 560,
+      "label": "#1E6FFF（fan-out）",
+      "variant": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Router 只做路由",
+      "items": [
+        "不讀程式碼、不寫計畫，路由備註最多 30 字",
+        "主 Session 被 noWait 守衛禁止 sleep / 長等待"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Worker 決定自己的追問",
+      "items": [
+        "範圍內就做並 ack；範圍外 hand-back 一次",
+        "hand-back 後才進新的 Eval"
+      ]
+    }
+  ]
+}
